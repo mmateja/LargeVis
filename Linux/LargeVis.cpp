@@ -51,21 +51,49 @@ void LargeVis::load_from_file(char *infile)
 {
 	clean_data();
 	FILE *fin = fopen(infile, "rb");
-	if (fin == NULL)
-	{
+	if (fin == NULL) {
 		printf("\nFile not found!\n");
 		return;
 	}
-    	printf("Reading input file %s ......", infile); fflush(stdout);
-	fscanf(fin, "%lld%lld", &n_vertices, &n_dim);
-	vec = new real[n_vertices * n_dim];
-	for (long long i = 0; i < n_vertices; ++i)
-	{
-		for (long long j = 0; j < n_dim; ++j)
-		{
-			fscanf(fin, "%f", &vec[i * n_dim + j]);
+	printf("Reading input file %s\n", infile);
+	fflush(stdout);
+
+	std::vector <real> *vector = new std::vector<real>;
+	const int BUFF_SIZE = 10000;
+	char buffer[BUFF_SIZE];
+	int n = -1;
+	real number;
+	int columns_number = -1;
+
+	int line = 0;
+
+	char *curr_pos = NULL;
+	while (fgets(buffer, BUFF_SIZE, fin) != NULL) {
+		int i = 0;
+		curr_pos = strtok(buffer, " ,;\t");
+		while (curr_pos != NULL && sscanf(curr_pos, "%f", &number) > 0) {
+			i++;
+			vector->push_back(number);
+			curr_pos = strtok(NULL, " ,;\t");
+		}
+		if (columns_number != -1 && columns_number != i) {
+			printf("Wrong number of columns: previously %d, now %d", columns_number, i);
+			exit(0);
+		}
+		columns_number = i;
+
+		line++;
+
+		if(line % 1000 == 0) {
+			printf("\r%dk lines", line/1000);
+			fflush(stdout);
 		}
 	}
+
+	vec = vector->data();
+	n_vertices = line;
+	n_dim = columns_number;
+
 	fclose(fin);
 	printf(" Done.\n");
 	printf("Total vertices : %lld\tDimension : %lld\n", n_vertices, n_dim);
@@ -131,7 +159,7 @@ void LargeVis::load_from_graph(char *infile)
 void LargeVis::save(char *outfile)
 {
 	FILE *fout = fopen(outfile, "wb");
-	fprintf(fout, "%lld %lld\n", n_vertices, out_dim);
+//	fprintf(fout, "%lld %lld\n", n_vertices, out_dim);
 	for (long long i = 0; i < n_vertices; ++i)
 	{
 		if (names.size()) fprintf(fout, "%s ", names[i].c_str());
